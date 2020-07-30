@@ -5,8 +5,22 @@ import re
 # TODO: add "{" and "}" escape
 
 
-def initialize(file_name):  # resetting all settings and starting converting for each file
-    return 0
+def file_load_as_string(file_path):  # loads file content as single string
+    file = open(file_path, "r")
+    file_content = file.read()
+    file.close()
+    return file_content
+
+
+def save_file(file_path, content):  # saves "content" string into file, with error check
+    try:
+        file_path = file_path.split(".cpp")[0]  # TODO: make correct format change
+        file = open(file_path + '.intpr', 'wt')  # TODO: delete temporary file after completion (?)
+        file.write(content)
+        file.close()
+        return 0
+    except:
+        return 1
 
 
 def find_singleline_comments(raw_string):  # function that finds and deletes all comments in line
@@ -54,18 +68,15 @@ def parse(raw_string):  # function that unites all 'parse' methods
     return new_string
 
 
+def initialize(file_name):  # resetting all settings and starting converting for each file
+    content = file_load_as_string(file_name)
+    parsed_content = parse(content)
+    error_check = save_file(file_name, parsed_content)  # TODO: make not that dumb error check
+    if error_check == 1:
+        print("Got an error during save operation")
+    return 0
+
+
 if __name__ == '__main__':
-    file_to_transfer = "./test.txt"
+    file_to_transfer = "example.cpp"
     initialize(file_to_transfer)
-    print(parse("\n\n\n"
-                "Test //Test //Test \n\n"
-                ""
-                "Test2 //Test2\n"
-                "/* this is new \n"
-                " commentary \n "
-                "multiline */ \n "
-                "Test3//Test3//Test3\n"
-                "//Test4"
-                ""
-                ""
-                "\n\n\n"))
