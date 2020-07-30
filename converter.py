@@ -33,13 +33,38 @@ def find_singleline_comments(raw_string):  # function that finds and deletes all
 
 def find_multiline_comments(raw_string):
     new_string = raw_string
-    while (re.search(r"(\/\*).*?(\*\/)", new_string, re.DOTALL)) is not None:
-        escaped_group = re.search(r"(\/\*).*?(\*\/)", new_string, re.DOTALL)
+    while (re.search(r"(/\*).*?(\*/)", new_string, re.DOTALL)) is not None:
+        escaped_group = re.search(r"(/\*).*?(\*/)", new_string, re.DOTALL)
         new_string = new_string[:escaped_group.start()] + new_string[escaped_group.end():]
     return new_string
 
 
-def delete_empty_lines(raw_string):  # clearing all the empty lines
+def del_all_newlines(raw_string):  # delete all the newlines inside string
+    new_string = raw_string
+    while re.search(r"(\n)", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
+        escaped_group = re.search(r"(\n)", new_string, re.DOTALL)
+        new_string = new_string[:escaped_group.start()] + new_string[escaped_group.end():]
+    return new_string
+
+
+def del_multiple_spaces(raw_string):
+    new_string = raw_string
+    while re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
+        escaped_group = re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL)
+        new_string = new_string[:escaped_group.start()] + "\n" + new_string[escaped_group.end() - 1:]
+
+
+def cleanup_params(raw_string):  # cleanup newlines in brackets ()
+    new_string = raw_string
+    while re.search(r"(\().*.(\n).*?(\))", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
+        escaped_group = re.search(r"(\().*.(\n).*?(\))", new_string, re.DOTALL)
+        new_string = new_string[:escaped_group.start()] \
+                     + del_all_newlines(new_string[escaped_group.start():escaped_group.end()]).replace(' ', '') \
+                     + new_string[escaped_group.end():]
+    return new_string
+
+
+def del_empty_lines(raw_string):  # clearing all the empty lines
     new_string = raw_string
 
     while re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
@@ -60,11 +85,14 @@ def parse(raw_string):  # function that unites all 'parse' methods
     # Parse order:
     # 1. Delete all single-line comments
     # 2. Delete all multi-line comments
-    # 3. Clear empty lines
+    # 3. Singleline '(' and ')'s
+    # 4. Delete double spaces
+    # 5. Clear empty lines
 
     new_string = find_singleline_comments(raw_string)
     new_string = find_multiline_comments(new_string)
-    new_string = delete_empty_lines(new_string)
+    new_string = cleanup_params(new_string)
+    new_string = del_empty_lines(new_string)
     return new_string
 
 
