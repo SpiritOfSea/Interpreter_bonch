@@ -1,110 +1,170 @@
 import re
 
 
-# TODO: remake as a class
-# TODO: add "{" and "}" escape
+# TODO: delete temporary file after completion
+# TODO: add error raising
 
 
-def file_load_as_string(file_path):  # loads file content as single string
-    file = open(file_path, "r")
-    file_content = file.read()
-    file.close()
-    return file_content
+class Converter:
 
-
-def save_file(file_path, content):  # saves "content" string into file, with error check
-    try:
-        file_path = file_path.split(".cpp")[0]  # TODO: make correct format change
-        file = open(file_path + '.intpr', 'wt')  # TODO: delete temporary file after completion (?)
-        file.write(content)
+    def file_load_as_string(self):  # loads file content as single string
+        file = open(self.input_path, "r")
+        file_content = file.read()
         file.close()
-        return 0
-    except:
-        return 1
+        self.content = file_content
 
+    def save_file(self):  # saves "content" string into file, with error check
+        try:
+            file = open(self.output_path, 'wt')
+            file.write(self.content)
+            file.close()
+        except:
+            print("An error occured")  # RAISE ERROR
 
-def find_singleline_comments(raw_string):  # function that finds and deletes all comments in line
-    new_string = raw_string
-    while (re.search(r"(//).*$", new_string, re.MULTILINE)) is not None:
-        escaped_group = re.search(r"(//).*", new_string, re.MULTILINE)
-        new_string = new_string[:escaped_group.start()] + new_string[escaped_group.end():]
-    return new_string
+    def find_singleline_comments(self):  # function that finds and deletes all comments in line
+        while (re.search(r"(//).*$", self.content, re.MULTILINE)) is not None:
+            escaped_group = re.search(r"(//).*", self.content, re.MULTILINE)
+            self.content = self.content[:escaped_group.start()] + self.content[escaped_group.end():]
 
+    def find_multiline_comments(self):
+        while (re.search(r"(/\*).*?(\*/)", self.content, re.DOTALL)) is not None:
+            escaped_group = re.search(r"(/\*).*?(\*/)", self.content, re.DOTALL)
+            self.content = self.content[:escaped_group.start()] + self.content[escaped_group.end():]
 
-def find_multiline_comments(raw_string):
-    new_string = raw_string
-    while (re.search(r"(/\*).*?(\*/)", new_string, re.DOTALL)) is not None:
-        escaped_group = re.search(r"(/\*).*?(\*/)", new_string, re.DOTALL)
-        new_string = new_string[:escaped_group.start()] + new_string[escaped_group.end():]
-    return new_string
+    @staticmethod
+    def del_all_newlines(text_to_cleanup):  # delete all the newlines inside string
+        new_string = text_to_cleanup
+        while re.search(r"(\n)", new_string, re.DOTALL) is not None:
+            escaped_group = re.search(r"(\n)", new_string, re.DOTALL)
+            new_string = new_string[:escaped_group.start()] + new_string[escaped_group.end():]
+        return new_string
 
+    def del_spaces(self):  # delete spaces
+        in_quotes = False  # bool to check surrounding quotes
+        prev_char = ''  # previous char to catch sequence
+        cor = 0  # correction to avoid "out of range" problem
+        for char_pos in range(len(self.content)):
+            char = self.content[char_pos - cor]
+            if char == r'"' and in_quotes is False:
+                in_quotes = True
+            elif char == r'"' and in_quotes is True:
+                in_quotes = False
+            elif char == r' ' and prev_char == r' ' and in_quotes is False:  # delete double spaces not in quotes
+                self.content = self.content[:char_pos - cor] + self.content[char_pos + 1 - cor:]
+                cor += 1
+            elif char == r' ' and prev_char == "\n":  # delete spaces at the beginning of the line
+                self.content = self.content[:char_pos - cor] + self.content[char_pos + 1 - cor:]
+                cor += 1
+            elif char == "\n" and prev_char == r' ':  # delete spaces at the end of the line
+                self.content = self.content[:char_pos - cor - 1] + self.content[char_pos - cor:]
+                cor += 1
+            else:
+                prev_char = char
+        self.content = self.content.replace(" ;", ";")  # also fixing ;'s here
+        self.content = self.content.replace("\n;", ";")
+        self.content = self.content.replace(";", ";\n")
 
-def del_all_newlines(raw_string):  # delete all the newlines inside string
-    new_string = raw_string
-    while re.search(r"(\n)", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
-        escaped_group = re.search(r"(\n)", new_string, re.DOTALL)
-        new_string = new_string[:escaped_group.start()] + new_string[escaped_group.end():]
-    return new_string
+    def cleanup_params(self):  # cleanup newlines and spaces in brackets ()
+        while re.search(r"(\([^(]*(\n|\s)[^(]*\))", self.content,
+                        re.DOTALL) is not None:  # deleting all empty lines in middle
+            escaped_group = re.search(r"(\([^(]*(\n|\s)[^(]*\))", self.content, re.DOTALL)
+            self.content = self.content[:escaped_group.start()] \
+                           + self.del_all_newlines(self.content[escaped_group.start():escaped_group.end()]).replace(' ','') \
+                           + '\n' + self.content[escaped_group.end():]
 
+    def check_for_paired_brackets(self):  # check { and } for pairs, also add newlines
+        self.content = self.content.replace("{", "\n${\n")
+        self.content = self.content.replace("}", "\n$}\n")  # add marks to both { and }, also add newlines
+        while re.search(r"(\$})", self.content, re.DOTALL):  # while closing brackets exist...
+            closest_bracket = re.search(r"(\$})", self.content, re.DOTALL).start()
+            if self.content[:closest_bracket].rfind("${") != -1:  # ...find opening brackets for them
+                self.content = self.content[:closest_bracket] + self.content[closest_bracket + 1:]  # delete marks
+                self.content = self.content[:self.content[:closest_bracket].rfind("${")] \
+                               + self.content[self.content[:closest_bracket].rfind("${") + 1:]
+            else:  # if closing bracket exist, but opening does not
+                error_pos = closest_bracket
+                print("{ MISSING AT " + str(error_pos))  # RAISE ERROR
+                self.content = self.content[:closest_bracket] + self.content[closest_bracket + 1:]
+        if re.search(r"(\${)", self.content, re.DOTALL):  # if opening bracket exist, but closing does not
+            error_pos = re.search(r"(\${)", self.content, re.DOTALL).start()
+            self.content = self.content[:error_pos] + self.content[error_pos + 1:]
+            print("} MISSING AT " + str(error_pos))  # RAISE ERROR
 
-def del_multiple_spaces(raw_string):
-    new_string = raw_string
-    while re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
-        escaped_group = re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL)
-        new_string = new_string[:escaped_group.start()] + "\n" + new_string[escaped_group.end() - 1:]
+    def del_empty_lines(self):  # clearing all the empty lines
+        while re.search(r"(\n\s).*?(\S)", self.content, re.DOTALL) is not None:  # deleting all empty lines in middle
+            escaped_group = re.search(r"(\n\s).*?(\S)", self.content, re.DOTALL)
+            self.content = self.content[:escaped_group.start()] + "\n" + self.content[escaped_group.end() - 1:]
 
+        while self.content[:1] == "\n":  # deleting all empty lines at the beginning
+            self.content = self.content[1:]
 
-def cleanup_params(raw_string):  # cleanup newlines in brackets ()
-    new_string = raw_string
-    while re.search(r"(\().*.(\n).*?(\))", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
-        escaped_group = re.search(r"(\().*.(\n).*?(\))", new_string, re.DOTALL)
-        new_string = new_string[:escaped_group.start()] \
-                     + del_all_newlines(new_string[escaped_group.start():escaped_group.end()]).replace(' ', '') \
-                     + new_string[escaped_group.end():]
-    return new_string
+        while self.content[-1:] == "\n":  # deleting all empty lines at the end
+            self.content = self.content[:-1]
 
+    def add_counter(self):  # add three digits at the beggining of the line
+        counter = 0
+        modified_content = ""
+        for line in self.content.split("\n"):
+            modified_content = modified_content + '\n' + str(counter).zfill(3) + ' ' + line
+            counter += 1
+        self.content = modified_content[1:]
 
-def del_empty_lines(raw_string):  # clearing all the empty lines
-    new_string = raw_string
+    def correct_short_functions(self):  # add brackets to one-line-functions
+        while re.search(r'((if|while|else)\(\S*?\)[^\n])', self.content, re.DOTALL):
+            escaped_group = re.search(r'((if|while|else)\(\S*?\)[^\n])', self.content, re.DOTALL)
+            self.content = self.content[:escaped_group.end() - 1] + '\n' + self.content[escaped_group.end():]
+        while re.search(r'((if\([^{]*?\)?|while\([^{]*?\)?|else)\n[^{]*?\n)', self.content, re.DOTALL):
+            escaped_group = re.search(r'((if\([^{]*?\)?|while\([^{]*?\)?|else)\n[^{]*?\n)', self.content, re.DOTALL)
+            modified_group = escaped_group.group(1).split('\n')[0] + '\n{\n' + escaped_group.group(1).split('\n')[
+                1] + '\n}\n'
+            self.content = self.content[:escaped_group.start()] + modified_group + self.content[escaped_group.end():]
 
-    while re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL) is not None:  # deleting all empty lines in middle
-        escaped_group = re.search(r"(\n\s).*?(\S)", new_string, re.DOTALL)
-        new_string = new_string[:escaped_group.start()] + "\n" + new_string[escaped_group.end() - 1:]
+    def singleline_vars(self):  # collapse all text after aloat\int\char in one line
+        while re.search(r'((float|char|int)[^()]*?\n+?[^()]*?;)', self.content, re.DOTALL):
+            escaped_group = re.search(r'((float|char|int)[^()]*?\n+?[^()]*?;)', self.content, re.DOTALL)
+            modified_group = escaped_group.group(0).replace('\n', '')
+            self.content = self.content[:escaped_group.start()] + modified_group + self.content[escaped_group.end():]
 
-    while new_string[:1] == "\n":  # deleting all empty lines at the beginning
-        new_string = new_string[1:]
+    def check_text_at_end(self):
+        if self.content[-1] != '}':
+            print("ERROR, TEXT AFTER END")  # RAISE ERROR
 
-    while new_string[-1:] == "\n":  # deleting all empty lines at the end
-        new_string = new_string[:-1]
+    def parse(self):  # method that unites all 'parse' methods
 
-    return new_string
+        # Parse order:
+        # 1. Delete all single-line comments
+        # 2. Delete all multi-line comments
+        # 3. Singleline '(' and ')'s
+        # 4. Check paired { }
+        # 5. Expand one line functions
+        # 6. Place variable definitions in one line
+        # 7. Delete double spaces not in quotes
+        # 8. Clear empty lines
+        # 9. Check for text after ending }
+        # 10. Add counter
 
+        self.find_singleline_comments()
+        self.find_multiline_comments()
+        self.cleanup_params()
+        self.check_for_paired_brackets()
+        self.correct_short_functions()
+        self.singleline_vars()
+        self.del_spaces()
+        self.del_empty_lines()
+        self.check_text_at_end()
+        self.add_counter()
 
-def parse(raw_string):  # function that unites all 'parse' methods
+    def start_convertation(self):
+        self.file_load_as_string()
+        self.parse()
+        self.save_file()
 
-    # Parse order:
-    # 1. Delete all single-line comments
-    # 2. Delete all multi-line comments
-    # 3. Singleline '(' and ')'s
-    # 4. Delete double spaces
-    # 5. Clear empty lines
-
-    new_string = find_singleline_comments(raw_string)
-    new_string = find_multiline_comments(new_string)
-    new_string = cleanup_params(new_string)
-    new_string = del_empty_lines(new_string)
-    return new_string
-
-
-def initialize(file_name):  # resetting all settings and starting converting for each file
-    content = file_load_as_string(file_name)
-    parsed_content = parse(content)
-    error_check = save_file(file_name, parsed_content)  # TODO: make not that dumb error check
-    if error_check == 1:
-        print("Got an error during save operation")
-    return 0
+    def __init__(self, input_path, output_path):
+        self.input_path = input_path
+        self.output_path = output_path
+        self.content = ""
 
 
 if __name__ == '__main__':
-    file_to_transfer = "example.cpp"
-    initialize(file_to_transfer)
+    convert = Converter("example.cpp", "example.intpr")
+    convert.start_convertation()
