@@ -159,7 +159,6 @@ class Translator:
 
 if __name__ == '__main__':
     Translator = Translator("example.intpr")
-    MEM = variables.VAR_MEM()
     Translator.translate()
     for x in Translator.OP_LIST:
         print(x)
