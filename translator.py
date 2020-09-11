@@ -15,8 +15,9 @@ class Translator:
 
         # OP LIST INSTRUCTIONS SET:
         # SETVAR (var, content) - set var
-        # INCRVAR (var) - increase by 1
-        # DECRVAR (var) - decrease by 1
+        # DO (ID) - start of do with uID
+        # ENDOFDO (ID) - end of do with uID
+        # DOWHILE (cond, ID) - start of WHILE block after DO with uID
         # WHILE (cond, ID) - start of while with unique ID
         # ENDOWHILE (ID) - end of while block with uID
         # FOR ((cond), ID) - start of for block with uID
@@ -30,6 +31,7 @@ class Translator:
         with open(self.translating_file) as file:
             self.block = [line.strip() for line in file]
         self.OP_LIST = self.translate_block(0, len(self.block))  # First "block" consists of whole file
+        return self.OP_LIST
 
     def translate_block(self, start, end):  # Operation that translates 'block', takes start an end of block
         OP_LIST = []  # Generate block, inner OP_LIST
@@ -89,7 +91,7 @@ class Translator:
                 self.unique_counter += 1  # Continue global ID counter
 
         elif key == 'for':  # Holding of "for"
-            cond = re.search(r'(\(.*\))', trstr).group(0)[1:-1].split(';')  # Parse (a;b;c) params as list of conditions
+            cond = trstr[1:-1].split(';')  # Parse (a;b;c) params as list of conditions
             out_point = self.blocks_dict[line_number+1]
 
             temp_OP_LIST = self.translate_block(in_point+1, out_point)
@@ -101,16 +103,19 @@ class Translator:
             self.unique_counter += 1
 
         elif key == 'if':
-            cond = re.search(r'(\(.*\))', trstr).group(0)[1:-1]
-            out_point = self.blocks_dict[line_number+1]
+            try:
+                cond = re.search(r'(\(.*\))', trstr).group(0)[1:-1]
+                out_point = self.blocks_dict[line_number+1]
 
-            temp_OP_LIST = self.translate_block(in_point+1, out_point)
+                temp_OP_LIST = self.translate_block(in_point+1, out_point)
 
-            OP_LIST.append(("IF", cond, self.unique_counter))
-            for x in temp_OP_LIST:
-                OP_LIST.append(x)
-            OP_LIST.append(("ENDOFIF", self.unique_counter))
-            self.unique_counter += 1
+                OP_LIST.append(("IF", cond, self.unique_counter))
+                for x in temp_OP_LIST:
+                    OP_LIST.append(x)
+                OP_LIST.append(("ENDOFIF", self.unique_counter))
+                self.unique_counter += 1
+            except AttributeError as e:
+                self.reporter.raise_error("Wrong IF handle(condition error)", e)
 
         elif key == 'else':
             out_point = self.blocks_dict[line_number+1]

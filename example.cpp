@@ -1,16 +1,15 @@
 
+float var1,var2;
+int var3, var4 = 5;
+char text = 'a';
 
+var1 = 0;
 
-Test //Test //Test
+for (i=4; i<10; i++){
 
-Test2 //Test2
-/* this is new
-  commentary
-  with multiline */ Code  after commentary
-Test3 //Test3
-while(test;
-   one more param;
-
- and another)
-
-
+if (var3 == var4) {
+var3 = var3*10;
+}
+else {
+var1 = var1+1;}
+}

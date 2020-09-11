@@ -1,13 +1,14 @@
 import memory
-import re
 from utility import *
 import errors
 
 
 # OP LIST INSTRUCTIONS SET:
 # SETVAR (var, content) - set var
-# INCRVAR (var) - increase by 1
-# DECRVAR (var) - decrease by 1
+
+# DO (ID) - start of do with uID
+# ENDOFDO (ID) - end of do with uID
+# DOWHILE (cond, ID) - start of WHILE block after DO with uID
 
 # WHILE (cond, ID) - start of while with unique ID
 # ENDOWHILE (ID) - end of while block with uID
@@ -23,9 +24,9 @@ import errors
 
 class Executor:
 
-    def __init__(self, OP_LIST):
+    def __init__(self):
         self.MEM = memory.VAR_MEM()
-        self.OP_LIST = OP_LIST
+        self.OP_LIST = []
         self.reporter = errors.ErrorReporter('__executor.py__')
 
     def execute(self, OP_block):
@@ -104,6 +105,9 @@ class Executor:
 
             if pointer == starting_pointer:
                 pointer +=1
+
+    def dump_mem(self):
+        return str(self.MEM)
 
 
 if __name__ == "__main__":

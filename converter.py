@@ -145,17 +145,19 @@ class Converter:
         # 8. Clear empty lines
         # 9. Check for text after ending }
         # 10. Add counter
-
-        self.find_singleline_comments()
-        self.find_multiline_comments()
-        self.cleanup_params()
-        self.check_for_paired_brackets()
-        self.correct_short_functions()
-        self.singleline_vars()
-        self.del_spaces()
-        self.del_empty_lines()
-        self.check_text_at_end()
-        self.add_counter()
+        try:
+            self.find_singleline_comments()
+            self.find_multiline_comments()
+            self.check_for_paired_brackets()
+            self.correct_short_functions()
+            self.singleline_vars()
+            self.del_spaces()
+            self.cleanup_params()
+            self.del_empty_lines()
+            self.check_text_at_end()
+            self.add_counter()
+        except Exception as e:
+            self.reporter.raise_error("Error during parsing", e)
 
     def start_convertation(self):
         self.file_load_as_string()
