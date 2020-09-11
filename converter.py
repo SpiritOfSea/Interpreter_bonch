@@ -1,11 +1,14 @@
 import re
-
-
-# TODO: delete temporary file after completion
-# TODO: add error raising
+import errors
 
 
 class Converter:
+
+    def __init__(self, input_path, output_path):
+        self.input_path = input_path
+        self.output_path = output_path
+        self.content = ""
+        self.reporter = errors.ErrorReporter("__converter.py__")
 
     def file_load_as_string(self):  # loads file content as single string
         file = open(self.input_path, "r")
@@ -18,15 +21,15 @@ class Converter:
             file = open(self.output_path, 'wt')
             file.write(self.content)
             file.close()
-        except:
-            print("An error occured")  # RAISE ERROR
+        except Exception as e:
+            self.reporter.raise_error("Error during file saving", e)
 
     def find_singleline_comments(self):  # function that finds and deletes all comments in line
         while (re.search(r"(//).*$", self.content, re.MULTILINE)) is not None:
             escaped_group = re.search(r"(//).*", self.content, re.MULTILINE)
             self.content = self.content[:escaped_group.start()] + self.content[escaped_group.end():]
 
-    def find_multiline_comments(self):
+    def find_multiline_comments(self):  # function that deletes block comments
         while (re.search(r"(/\*).*?(\*/)", self.content, re.DOTALL)) is not None:
             escaped_group = re.search(r"(/\*).*?(\*/)", self.content, re.DOTALL)
             self.content = self.content[:escaped_group.start()] + self.content[escaped_group.end():]
@@ -83,12 +86,12 @@ class Converter:
                                + self.content[self.content[:closest_bracket].rfind("${") + 1:]
             else:  # if closing bracket exist, but opening does not
                 error_pos = closest_bracket
-                print("{ MISSING AT " + str(error_pos))  # RAISE ERROR
+                self.reporter.raise_error("'{' missing at "+str(error_pos)+" position", '')
                 self.content = self.content[:closest_bracket] + self.content[closest_bracket + 1:]
         if re.search(r"(\${)", self.content, re.DOTALL):  # if opening bracket exist, but closing does not
             error_pos = re.search(r"(\${)", self.content, re.DOTALL).start()
             self.content = self.content[:error_pos] + self.content[error_pos + 1:]
-            print("} MISSING AT " + str(error_pos))  # RAISE ERROR
+            self.reporter.raise_error("'}' missing at "+str(error_pos)+" position", '')
 
     def del_empty_lines(self):  # clearing all the empty lines
         while re.search(r"(\n\s).*?(\S)", self.content, re.DOTALL) is not None:  # deleting all empty lines in middle
@@ -127,7 +130,7 @@ class Converter:
 
     def check_text_at_end(self):
         if self.content[-1] != '}':
-            print("ERROR, TEXT AFTER END")  # RAISE ERROR
+            self.reporter.raise_error("Text after last '}'", '')
 
     def parse(self):  # method that unites all 'parse' methods
 
@@ -158,11 +161,6 @@ class Converter:
         self.file_load_as_string()
         self.parse()
         self.save_file()
-
-    def __init__(self, input_path, output_path):
-        self.input_path = input_path
-        self.output_path = output_path
-        self.content = ""
 
 
 if __name__ == '__main__':

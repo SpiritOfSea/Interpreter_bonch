@@ -1,6 +1,7 @@
 #  module that translates source code into ordered list of operations
 
 from utility import *
+import errors
 
 
 class Translator:
@@ -10,6 +11,7 @@ class Translator:
         self.blocks_dict = get_block_dict(translating_file)  # Generate block map
         self.translating_file = translating_file  # Source file
         self.unique_counter = 0  # Unique counter for commands
+        self.reporter = errors.ErrorReporter("__translator.py__")
 
         # OP LIST INSTRUCTIONS SET:
         # SETVAR (var, content) - set var
@@ -53,10 +55,10 @@ class Translator:
             if trstr[-1] == ';':
                 trstr = trstr[:-1]
             else:
-                # print("NO ; AT END")
                 pass
         except IndexError as e:
             pass
+            # self.reporter.raise_error("Index error while trying to delete ';'", e)
 
         if key == "float" or key == "int" or key == "char":  # If string starts with keywords
             if len(trstr.split("=")) != 1:  # If we have construction like "type var1, ..., varN = ..."
@@ -135,10 +137,10 @@ class Translator:
 
         else:  # If string starts with unknown keyword, place it as var name
                 if trstr[0:2] == '++':  # Increase by 1 operation
-                    OP_LIST.append(('INCRVAR', key))
+                    OP_LIST.append(('SETVAR', key, key+'+1'))
 
                 elif trstr[0:2] == '--':  # Decrease by 1 operation
-                    OP_LIST.append(('DECRVAR', key))
+                    OP_LIST.append(('SETVAR', key, key+'-1'))
 
                 elif trstr[0:1] == ',':  # If we are working with multiple variables
                     variables = key+trstr.split("=")[0].strip()

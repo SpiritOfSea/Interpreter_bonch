@@ -1,4 +1,4 @@
-import variables
+import memory
 import re
 
 
@@ -49,21 +49,12 @@ def get_block_dict(src_file):
                 start_list.append(get_line_number(line))
             elif line[4] == '}':
                 block_dict.update({start_list.pop():get_line_number(line)})
-    # empty_blocks = []
-    # for key in block_dict:
-    #     if key+1 == block_dict.get(key):
-    #         empty_blocks.append(key)
-    # for key in empty_blocks:
-    #     block_dict.pop(key, None)
     return block_dict
 
 
 if __name__ == '__main__':
-    VAR_MEM = variables.VAR_MEM()
+    VAR_MEM = memory.VAR_MEM()
     VAR_MEM["var_int_ex"] = "int", 6
     VAR_MEM["var_char_ex"] = "int", 6
     VAR_MEM["var_float_ex"] = "float", 3.0
-    #
-    # eq = "1+1"
-    # print(compute_math(VAR_MEM, eq))
     print(get_block_dict("example.intpr"))
