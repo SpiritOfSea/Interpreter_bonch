@@ -163,8 +163,3 @@ class Converter:
         self.file_load_as_string()
         self.parse()
         self.save_file()
-
-
-if __name__ == '__main__':
-    convert = Converter("example.cpp", "example.intpr")
-    convert.start_convertation()

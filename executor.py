@@ -108,18 +108,3 @@ class Executor:
 
     def dump_mem(self):
         return str(self.MEM)
-
-
-if __name__ == "__main__":
-    OP = [('SETVAR', 'test2', ('int', '3')),
-          ('SETVAR', 'test', 'int'),
-          ('IF', 'test2==0', 0),
-          ('SETVAR', 'test', '1000'),
-          ('ENDOFIF', 0),
-          ('ELSE', 0),
-          ('SETVAR', 'test', '500'),
-          ('ENDOFELSE', 0),
-          ('SETVAR', 'test3', 'float')]
-    exec = Executor(OP)
-    exec.execute(OP)
-    print(exec.MEM)

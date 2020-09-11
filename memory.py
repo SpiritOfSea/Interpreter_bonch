@@ -90,12 +90,3 @@ class VAR_MEM:
     def get_type(self, key):  # get type of variable
         return self.IN_MEM[key][0]
 
-
-if __name__ == '__main__':
-    VAR_MEM = VAR_MEM()
-    VAR_MEM["var_int_ex"] = "int"
-    VAR_MEM["var_char_ex"] = "int", 6
-    VAR_MEM["var_int_ex"] = "char", 'y'
-    VAR_MEM["var_float_ex"] = "float", 4.5
-    print(VAR_MEM)
-

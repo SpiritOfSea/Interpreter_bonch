@@ -50,11 +50,3 @@ def get_block_dict(src_file):
             elif line[4] == '}':
                 block_dict.update({start_list.pop():get_line_number(line)})
     return block_dict
-
-
-if __name__ == '__main__':
-    VAR_MEM = memory.VAR_MEM()
-    VAR_MEM["var_int_ex"] = "int", 6
-    VAR_MEM["var_char_ex"] = "int", 6
-    VAR_MEM["var_float_ex"] = "float", 3.0
-    print(get_block_dict("example.intpr"))

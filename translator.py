@@ -162,10 +162,3 @@ class Translator:
         else:
             pass
         return out_point, OP_LIST
-
-
-if __name__ == '__main__':
-    Translator = Translator("example.intpr")
-    Translator.translate()
-    for x in Translator.OP_LIST:
-        print(x)
